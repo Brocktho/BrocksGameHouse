@@ -1,11 +1,13 @@
 import type { Coordinate } from '~/types';
-import { useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const Box = ({
     color,
     toggleColor,
     position,
-    index
+    index,
+    notifyParent,
+    appendBoard,
 } 
 : 
 {
@@ -13,17 +15,19 @@ const Box = ({
     toggleColor: Function,
     position: Coordinate,
     index: string, 
+    notifyParent: Function,
+    appendBoard: Function,
 }) => {
     
-    const callback = () => {
-        console.log(`my color is: ${color},  my coordinates are: ${position}`);
-    }
+    const [myClass, setMyClass] = useState<string>(`h-8 w-8 cursor-pointer ${color}`)
+    const myButton = useRef<HTMLButtonElement | null>(null);
 
-    useEffect(() => { 
-        document.getElementById(`${index}`)?.classList.add(`${color}`);
-    }, [index, color])
+    useEffect(() => {
+        appendBoard(position, myButton);
+    }, [])
+
     return(
-        <button id={index} className={`h-8 w-8 cursor-pointer`} onClick={(e) => toggleColor(e, position, callback)}>
+        <button id={index} className={myClass} onClick={(e) => toggleColor(e, position, setMyClass)} onFocus={(e) => notifyParent(position)} ref={myButton}>
 
         </button>
     )

@@ -1,11 +1,15 @@
-import type { Coordinate } from '~/types';
-import Box from '~/components/Box';
+import type { Coordinate, Box, Board } from '~/types';
+import BoxEl from '~/components/Box';
 import React from 'react';
 import invariant from 'tiny-invariant';
 import Navbar from "~/components/Navbar";
+import { useState, useRef } from "react";
 
 
 const TerritoryWars = () => {
+
+    const currentPos = useRef<Coordinate | undefined>();
+    const boardElements = useRef<Board | null>(null);
     const columns = 20;
     const rows = 20;
     let colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500'];
@@ -13,10 +17,9 @@ const TerritoryWars = () => {
     let players = 2;
     let turn = 0;
 
-
     let width = 2*columns;
 
-
+    let total = 0;
 
     let lefts = Array.apply(null, Array(rows)).map((aa, rowNum) => {
         return((rowNum*columns)+1)
@@ -31,6 +34,16 @@ const TerritoryWars = () => {
         return((columns*rows)-(columnNum))
     });
 
+    const setBoard = (coordinate : Coordinate, button : HTMLButtonElement) => {
+        let myBox : Box = {
+            coord: coordinate,
+            element: button }
+        if(boardElements.current === null){
+            boardElements.current = {elements:[myBox]};
+        }
+        boardElements.current.elements.push(myBox)
+        return 'smd'
+    }
 
     let left : number;
     let right : number;
@@ -102,45 +115,49 @@ const TerritoryWars = () => {
             recentChanges = [];
             propagateColor(ourId, interestedColor, theirColor, currentPlayer);
             turn++ 
-
-
         }
     } 
 
+    const getChildFocus = (position : Coordinate) => {
+        console.log(boardElements.current);
+        currentPos.current = position;
+    }
 
-      let total = 0;
-//    let elements = Array.apply(null,Array(12)).map(
-//        (a, y) => {
-  //          return(Array.apply(null,Array(12)).map(
-    //            (b, x) => {
-      //              let index = Math.floor(Math.random()*colors.length);
-        //            let color = colors[index];
-          //          let thisCoord: Coordinate = {x: x, y: y};
-            //        total++ 
-              //      return(
-                //        <Box color={color} position={thisCoord} toggleColor={toggleColors} index={`${total}`} key={`Box${total}`}/>
-                  //  )
-                //}
-            //))                    
-        //}
-    //)
+    const [elements, setElements] = useState(Array.apply(null,Array(rows)).map(
+        (a, y) => {
+            return(Array.apply(null,Array(columns)).map(
+                (b, x) => {
+                    let index = Math.floor(Math.random()*colors.length);
+                    let color = colors[index];
+                    let thisCoord: Coordinate = {x: x, y: y};
+                    total++ 
+                    return(
+                        <BoxEl color={color} position={thisCoord} toggleColor={toggleColors} notifyParent={getChildFocus} appendBoard={setBoard} index={`${total}`} key={`Box${total}`}/>
+                    )
+                })
+            )                    
+        })
+    );
 
     const handleArrows = (event: React.KeyboardEvent) => {
-        invariant(document.activeElement, 'required to exist');
-        let current = parseInt(document.activeElement.id);
+        console.log(currentPos.current);
+        invariant(currentPos.current, 'required to exist');
+        let current = currentPos.current;
         let next : number;
-        switch (event.keyCode) {
+        switch (event.key) {
+            case 'ArrowLeft':
+                console.log(elements[current.x][current.y]);
             //left arrow
-            case 37:
-                if( current === 1 ){
-                    next = columns*rows;
+            /* case 'ArrowLeft':
+                if( current.x === 1 && current.y === 1 ){
+                    elements[rows][columns]
                 }else{
                     next = current - 1;
                 }
                 document.getElementById(`${next}`)?.focus();
                 break;
             //right arrow
-            case 39:
+            case 'ArrowRight':
                 if( current === columns*rows){
                     next = 1;
                 }else{
@@ -149,7 +166,7 @@ const TerritoryWars = () => {
                 document.getElementById(`${next}`)?.focus();
                 break;
             //up arrow
-            case 38:
+            case 'ArrowUp':
             if( current > columns ){
                 next = current - columns;
             }else{
@@ -158,36 +175,24 @@ const TerritoryWars = () => {
             document.getElementById(`${next}`)?.focus();
             break;
             //ArrowDown
-            case 40:
+            case 'ArrowDown':
                 if( current < ((columns*rows)+1)-columns ){
                     next = current + columns;
                 }else{
                     next = columns - (columns*rows - current); 
                 }
                 document.getElementById(`${next}`)?.focus();
+            case 'Enter':
+                event.click() */
         }
     }
 
     return(
         <main className="w-screen min-h-screen bg-gradient-to-b from-slate-800 to-slate-500 flex flex-col">
             <Navbar/>
-            <div className="flex flex-col justify-center items-center h-screen w-full">
+            <div className="flex flex-col justify-center items-center w-full">
                 <div className={`flex flex-row flex-wrap max-w-[${width}rem]`} onKeyDown={(e) => handleArrows(e)}>
-                    {Array.apply(null,Array(rows)).map(
-                        (a, y) => {
-                            return(Array.apply(null,Array(columns)).map(
-                                (b, x) => {
-                                    let index = Math.floor(Math.random()*colors.length);
-                                    let color = colors[index];
-                                    let thisCoord: Coordinate = {x: x, y: y};
-                                    total++ 
-                                    return(
-                                        <Box color={color} position={thisCoord} toggleColor={toggleColors} index={`${total}`} key={`Box${total}`}/>
-                                    )
-                                })
-                            )                    
-                        })
-                    }
+                    {elements}
                 </div>
             </div>
         </main>
