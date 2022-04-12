@@ -1,4 +1,4 @@
-app = "brockthos-game-house-eb2b"
+app = "brockthos-game-house"
 kill_signal = "SIGINT"
 kill_timeout = 5
 processes = [ ]

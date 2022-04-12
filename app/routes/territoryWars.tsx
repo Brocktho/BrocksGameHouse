@@ -2,9 +2,10 @@ import type { Coordinate } from '~/types';
 import Box from '~/components/Box';
 import React from 'react';
 import invariant from 'tiny-invariant';
+import Navbar from "~/components/Navbar";
 
 
-const PaintGame = () => {
+const TerritoryWars = () => {
     const columns = 20;
     const rows = 20;
     let colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500'];
@@ -168,26 +169,29 @@ const PaintGame = () => {
     }
 
     return(
-        <div className="w-screen h-screen bg-slate-700 flex flex-row items-center justify-center">
-            <div className={`flex flex-row flex-wrap max-w-[${width}rem]`} onKeyDown={(e) => handleArrows(e)}>
-                {Array.apply(null,Array(rows)).map(
-        (a, y) => {
-            return(Array.apply(null,Array(columns)).map(
-                (b, x) => {
-                    let index = Math.floor(Math.random()*colors.length);
-                    let color = colors[index];
-                    let thisCoord: Coordinate = {x: x, y: y};
-                    total++ 
-                    return(
-                        <Box color={color} position={thisCoord} toggleColor={toggleColors} index={`${total}`} key={`Box${total}`}/>
-                    )
-                }
-            ))                    
-        }
-    )}
+        <main className="w-screen min-h-screen bg-gradient-to-b from-slate-800 to-slate-500 flex flex-col">
+            <Navbar/>
+            <div className="flex flex-col justify-center items-center h-screen w-full">
+                <div className={`flex flex-row flex-wrap max-w-[${width}rem]`} onKeyDown={(e) => handleArrows(e)}>
+                    {Array.apply(null,Array(rows)).map(
+                        (a, y) => {
+                            return(Array.apply(null,Array(columns)).map(
+                                (b, x) => {
+                                    let index = Math.floor(Math.random()*colors.length);
+                                    let color = colors[index];
+                                    let thisCoord: Coordinate = {x: x, y: y};
+                                    total++ 
+                                    return(
+                                        <Box color={color} position={thisCoord} toggleColor={toggleColors} index={`${total}`} key={`Box${total}`}/>
+                                    )
+                                })
+                            )                    
+                        })
+                    }
+                </div>
             </div>
-        </div>
+        </main>
     )
 }
 
-export default PaintGame;
+export default TerritoryWars;
