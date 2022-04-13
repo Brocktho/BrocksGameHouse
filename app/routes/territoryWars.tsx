@@ -51,7 +51,6 @@ const TerritoryWars = () => {
 
 
     const propagateColor = async (position : Coordinate, color : string, newColor : string, player : number) => {
-        console.log(position);
         invariant(boardElements.current, "Must exist");
         let currentColor = boardElements.current.elements[position.y][position.x].currentColor
         invariant(currentColor, 'if not found this is invalid');
