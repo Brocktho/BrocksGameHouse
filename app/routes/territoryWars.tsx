@@ -21,109 +21,126 @@ const TerritoryWars = () => {
 
     let total = 0;
 
-    let lefts = Array.apply(null, Array(rows)).map((aa, rowNum) => {
-        return((rowNum*columns)+1)
-    });
-    let rights = Array.apply(null, Array(rows)).map((bb, rowNum) => {
-        return(((rowNum+1)*columns))
-    });;
-    let tops = Array.apply(null, Array(columns)).map((cc, columnNum) => {
-        return(columnNum+1)
-    });
-    let bottoms = Array.apply(null, Array(columns)).map((dd, columnNum) => {
-        return((columns*rows)-(columnNum))
-    });
-
-    const setBoard = (coordinate : Coordinate, button : HTMLButtonElement) => {
+    const setBoard = (updateButton : Function, color : string, coordinate : Coordinate, button : React.MutableRefObject<HTMLButtonElement>) => {
+        
         let myBox : Box = {
-            coord: coordinate,
-            element: button }
+            updateColor: updateButton,
+            currentColor: color,
+            coords: coordinate,
+            element: button };
+        
         if(boardElements.current === null){
-            boardElements.current = {elements:[myBox]};
+            boardElements.current = {elements:[[myBox]]};
+        }else{
+            if(coordinate.x === 0){
+                boardElements.current.elements.push([myBox]);
+            }else{
+                boardElements.current.elements[coordinate.y].push(myBox)
+            }
         }
-        boardElements.current.elements.push(myBox)
-        return 'smd'
+        //
+        return 'Success!'
     }
 
     let left : number;
     let right : number;
     let top  : number;
     let bottom : number;
-    let recentChanges : Array<string> = [];
+    let recentChanges : Array<Coordinate> = [];
     const sleep = (ms:number) => new Promise(r => setTimeout(r, ms));
 
 
-    const propagateColor = async (id : string, color : string, newColor : string, player : number) => {
-        let num : number = parseInt(id);
-        let element = document.getElementById(id);
-        invariant(element, 'if not found this is invalid');
-        if(element.classList[3] === color && !recentChanges.includes(id)){
-            recentChanges.push(id);
-            element.classList.remove(color);
-            element.classList.add(newColor);
+    const propagateColor = async (position : Coordinate, color : string, newColor : string, player : number) => {
+        console.log(position);
+        invariant(boardElements.current, "Must exist");
+        let currentColor = boardElements.current.elements[position.y][position.x].currentColor
+        invariant(currentColor, 'if not found this is invalid');
+        let updateColor : Function = boardElements.current.elements[position.y][position.x].updateColor
+        if(currentColor === color && !insideRecents(position)){
+            recentChanges.push(position);
             if(player === 0){
-                element.classList.add("bg-red-300");
+                updateColor("bg-red-300");
+                boardElements.current.elements[position.y][position.x].currentColor = "bg-red-300";
             }
             if(player === 1){
-                element.classList.add("bg-blue-300");
+                updateColor("bg-blue-300");
+                boardElements.current.elements[position.y][position.x].currentColor = "bg-blue-300";
             }
-            await sleep(150);
-            if(lefts.includes(num)){
-                //do nothing
-            }else{
-                left = num-1;
-                propagateColor(`${left}`, color, newColor, player)
+            await sleep(100);
+            if( position.x !== 0 ){
+                let newPosition = {
+                    x: position.x - 1, 
+                    y: position.y
+                };
+                propagateColor(newPosition, color, newColor, player);
             }
-            if(rights.includes(num)){
-                //do nothing
-            }else{
-                right = num + 1;
-                propagateColor(`${right}`, color, newColor, player)
+            if( position.x !== columns-1 ){
+                let newPosition = {
+                    x: position.x + 1,
+                    y: position.y
+                };
+                propagateColor(newPosition, color, newColor, player);
             }
-            if(tops.includes(num)){
-                //do nothing
-            }else{
-                top = num - columns;
-                propagateColor(`${top}`, color, newColor, player)
+            if( position.y !== 0){
+                let newPosition = {
+                    x: position.x,
+                    y: position.y - 1
+                };
+                propagateColor(newPosition, color, newColor, player);
             }
-            if(bottoms.includes(num)){
-                //do nothing
-            }else{
-                bottom = num + columns;
-                propagateColor(`${bottom}`, color, newColor, player)
+            if( position.y !== rows-1 ){
+                let newPosition = {
+                    x: position.x,
+                    y: position.y + 1
+                };
+                propagateColor(newPosition, color, newColor, player);
             }
         }
     }
-
-    const purgeRecents = (elements : Array<string>) => {
-        elements.forEach((val) => {
-            document.getElementById(val)?.classList.remove("bg-red-300");
-            document.getElementById(val)?.classList.remove("bg-blue-300");
+    
+    const insideRecents = (position : Coordinate) => {
+        let result : boolean = false;
+        recentChanges.forEach((val) => {
+            if(val.x === position.x && val.y === position.y){
+                result = true;
+            }
         })
+        return result;
+    }   
 
+    const purgeRecents = (currentPlayer : number) => {
+        recentChanges.forEach((val) => {
+            invariant(boardElements.current, "Must exist");
+            let updateColor = boardElements.current.elements[val.y][val.x].updateColor;
+            if(currentPlayer === 1){
+                updateColor("bg-red-500");
+                boardElements.current.elements[val.y][val.x].currentColor = "bg-red-500";
+            }
+            if(currentPlayer === 0){
+                updateColor("bg-blue-500");
+                boardElements.current.elements[val.y][val.x].currentColor = "bg-blue-500";
+            }
+        });
     }
 
-    const toggleColors = (e:React.MouseEvent<HTMLButtonElement>, position:Coordinate, callback:Function) => {
+    const toggleColors = (e:React.MouseEvent<HTMLButtonElement>, position:Coordinate) => {
         let currentPlayer = turn % players;
         let theirColor = playerColors[currentPlayer];
-        //this is some hard coded jank, but oh well
-        let ourTarget = e.target as HTMLButtonElement;
-        let interestedColor = ourTarget.classList[3];
-        let ourId = ourTarget.id;
-        if(theirColor !== interestedColor  && !recentChanges.includes(ourId) ){
-            purgeRecents(recentChanges);
+        invariant(boardElements.current, 'I know this is real');
+        let interestedColor = boardElements.current.elements[position.y][position.x].currentColor;
+        if(theirColor !== interestedColor && !insideRecents(position)){
+            purgeRecents(currentPlayer);
             recentChanges = [];
-            propagateColor(ourId, interestedColor, theirColor, currentPlayer);
+            propagateColor(position, interestedColor, theirColor, currentPlayer);
             turn++ 
         }
-    } 
+    }
 
     const getChildFocus = (position : Coordinate) => {
-        console.log(boardElements.current);
         currentPos.current = position;
     }
 
-    const [elements, setElements] = useState(Array.apply(null,Array(rows)).map(
+    const elements = Array.apply(null,Array(rows)).map(
         (a, y) => {
             return(Array.apply(null,Array(columns)).map(
                 (b, x) => {
@@ -136,54 +153,48 @@ const TerritoryWars = () => {
                     )
                 })
             )                    
-        })
-    );
+        });
 
     const handleArrows = (event: React.KeyboardEvent) => {
-        console.log(currentPos.current);
         invariant(currentPos.current, 'required to exist');
+        invariant(boardElements.current, "the board elements must be set");
         let current = currentPos.current;
-        let next : number;
         switch (event.key) {
             case 'ArrowLeft':
-                console.log(elements[current.x][current.y]);
             //left arrow
-            /* case 'ArrowLeft':
-                if( current.x === 1 && current.y === 1 ){
-                    elements[rows][columns]
+            case 'ArrowLeft':
+                if( current.x === 0 ){
+                    boardElements.current.elements[currentPos.current.y][columns-1].element.current?.focus();
                 }else{
-                    next = current - 1;
+                    boardElements.current.elements[currentPos.current.y][currentPos.current.x-1].element.current?.focus();
                 }
-                document.getElementById(`${next}`)?.focus();
                 break;
             //right arrow
             case 'ArrowRight':
-                if( current === columns*rows){
-                    next = 1;
+                if( current.x === columns-1){
+                    boardElements.current.elements[currentPos.current.y][0].element.current?.focus();
                 }else{
-                    next = current + 1;
+                    boardElements.current.elements[currentPos.current.y][currentPos.current.x+1].element.current?.focus();
                 }
-                document.getElementById(`${next}`)?.focus();
                 break;
             //up arrow
             case 'ArrowUp':
-            if( current > columns ){
-                next = current - columns;
+            if( current.y > 0 ){
+                boardElements.current.elements[currentPos.current.y-1][currentPos.current.x].element.current?.focus();
             }else{
-                next = (columns*rows) - columns + current;
+                boardElements.current.elements[rows-1][currentPos.current.x].element.current?.focus();
             }
-            document.getElementById(`${next}`)?.focus();
             break;
             //ArrowDown
             case 'ArrowDown':
-                if( current < ((columns*rows)+1)-columns ){
-                    next = current + columns;
+                if( current.y < rows-1){
+                    boardElements.current.elements[currentPos.current.y+1][currentPos.current.x].element.current?.focus();
                 }else{
-                    next = columns - (columns*rows - current); 
+                    boardElements.current.elements[0][currentPos.current.x].element.current?.focus();
                 }
-                document.getElementById(`${next}`)?.focus();
+            break;
             case 'Enter':
-                event.click() */
+            break;
         }
     }
 

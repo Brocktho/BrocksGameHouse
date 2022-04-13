@@ -7,8 +7,10 @@ export type Coordinate = {
 } 
 
 export type Box = {
-    coord: Coordinate,
-    element: HTMLButtonElement
+    updateColor: Function,
+    currentColor: string,
+    coords: Coordinate,
+    element: React.MutableRefObject<HTMLButtonElement | null>
 }
 
 export type Board = {
